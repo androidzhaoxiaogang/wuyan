@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.2.xsd
+		http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd  
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd  ">
+
+	<!-- Scans the classpath of this application for @Components to deploy as 
+		beans -->
+	<context:component-scan base-package="net.wecash" />
+
+	<!-- CUSTOMER OBJECTMAPPER -->
+	<bean id="objectMapperFactory" class="net.wecash.common.jackson.ObjectMapperFactory" />
+	<bean id="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper"
+		factory-bean="objectMapperFactory" factory-method="getMapper" />
+
+	<bean id="mappingJackson2HttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="objectMapper" ref="objectMapper" />
+	</bean>
+
+	<!-- MVC CONFIG -->
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<ref bean="mappingJackson2HttpMessageConverter" />
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">  
+        <property name="maxUploadSize" value="512000"/>  
+    </bean> 
+    
+	<mvc:default-servlet-handler />
+	<bean
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<property name="mediaTypes">
+			<map>
+				<entry key="json" value="application/json" />
+				<entry key="html" value="text/html" />
+				<entry key="stream" value="application/octet-stream"/>
+				<entry key="file" value="multipart/form-data"/>
+			</map>
+		</property>
+		<property name="defaultViews">
+			<list>
+				<bean class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+			</list>
+		</property>
+		<property name="defaultContentType" value="application/json" />
+	</bean>
+
+	<!-- EXCEPTION HANDLER -->
+	<bean class="net.wecash.common.exception.DefaultExceptionHandler">
+		<constructor-arg ref="objectMapper" />
+	</bean>
+
+	<!-- CONFIG PROPERTIES -->
+	<context:property-placeholder
+		location="classpath:api.properties,classpath:third.properties,classpath:mongo.properties,classpath:mq.properties,classpath:redis.properties,classpath:mysql.properties,classpath:system.properties" />
+
+	<!-- MONGO -->
+	<mongo:mongo id="mongo" replica-set="${mongodb.replicaSet}">
+		<mongo:options connections-per-host="100" slave-ok="true" />
+	</mongo:mongo>
+
+	<bean id="mongoFactory" class="net.wecash.common.service.MongoFactory">
+		<constructor-arg name="mongo" ref="mongo" />
+		<constructor-arg name="db" value="${mongodb.name}" />
+		<constructor-arg name="username" value="${mongodb.username}" />
+		<constructor-arg name="password" value="${mongodb.password}" />
+	</bean>
+
+	<bean class="org.springframework.web.client.RestTemplate">
+		<property name="messageConverters">
+			<list>
+				<ref bean="mappingJackson2HttpMessageConverter" />
+				<bean
+					class="org.springframework.http.converter.ByteArrayHttpMessageConverter" />
+				<bean
+					class="org.springframework.http.converter.StringHttpMessageConverter" />
+			</list>
+		</property>
+	</bean>
+
+	<!-- RABBITMQ CONFIG -->
+
+	<rabbit:connection-factory id="rabbitConnectionFactory"
+		requested-heartbeat="20" host="${mq.host}" port="${mq.port}" username="${mq.username}"
+		password="${mq.password}" />
+
+	<bean id="mqMessageConverter"
+		class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter">
+		<property name="jsonObjectMapper" ref="objectMapper" />
+	</bean>
+	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+	<rabbit:template id="amqpTemplate" connection-factory="rabbitConnectionFactory"
+		message-converter="mqMessageConverter">
+	</rabbit:template>
+
+	<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		<property name="maxActive" value="${redis.pool.maxActive}" />
+		<property name="maxIdle" value="${redis.pool.maxIdle}" />
+		<property name="maxWait" value="${redis.pool.maxWait}" />
+		<property name="testOnBorrow" value="${redis.pool.testOnBorrow}" />
+	</bean>
+
+	<!-- Jedis ConnectionFactory -->
+	<bean id="jedisConnectionFactory"
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+		<property name="hostName" value="${redis.hostname}" />
+		<property name="port" value="${redis.port}" />
+		<property name="password" value="${redis.password}" />
+		<property name="poolConfig" ref="jedisPoolConfig" />
+	</bean>
+	<bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate"
+		p:connection-factory-ref="jedisConnectionFactory">
+	</bean>
+
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName">
+			<value>${db.dirverClass}</value>
+		</property>
+		<property name="url">
+			<value>${db.url}</value>
+		</property>
+		<property name="username">
+			<value>${db.username}</value>
+		</property>
+		<property name="password">
+			<value>${db.password}</value>
+		</property>
+	</bean>
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.current_session_context_class">thread</prop>
+			</props>
+		</property>
+		<property name="packagesToScan">
+		<list>
+			<value>net.wecash.server.mysql.*</value>
+		</list>
+		</property>
+	</bean>
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+</beans>

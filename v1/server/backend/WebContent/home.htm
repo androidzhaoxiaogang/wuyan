@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script type="text/javascript" src="js/addr.js"></script>
+<script type="text/javascript" src="js/jquery-2.1.1.js"></script>
+<script type="text/javascript" src="js/jquery.cookies.2.2.0.js"></script>
+<script type="text/javascript" src="js/jquery.paginate.js"></script>
+<script type="text/javascript" src="js/layer.min.js"></script>
+<script type="text/javascript" src="style/menu.js"></script>
+<script type="text/javascript" src="js/plupload.full.min.js"></script>
+<link rel="stylesheet" href="style/default.css" type="text/css" />
+<link rel="stylesheet" type="text/css" href="css/style.css"
+	media="screen" />
+<title>屋檐后台管理系统</title>
+<style type="text/css">
+.tab {
+	background-color: #D8D8D8;
+	text-align: center;
+	margin-top: 10px;
+	font-size: 12px;
+	color: #666;
+}
+</style>
+
+</head>
+<body>
+	<dl id="header">
+		<dd>
+			<li><a target="_blank" href="http://www.tongjuba.net">屋檐</a></li>
+		</dd>
+	</dl>
+	<div id="contents">
+		<div class="right">
+			<ul id="TabPage1">
+				<li id="Tab1" class="Selected"
+					onClick="javascript:switchTab('TabPage1','Tab1');" title="用户">用户</li>
+				<li id="Tab2" onClick="javascript:switchTab('TabPage1','Tab2');" title="标签">标签</li>
+				<li id="Tab3" onClick="javascript:switchTab('TabPage1','Tab3');" title="趣味标签">趣味标签</li>
+				<li id="Tab4" onClick="javascript:switchTab('TabPage1','Tab4');" title="活动">活动</li>
+				<li id="Tab5" onClick="javascript:switchTab('TabPage1','Tab5');" title="推送">推送</li>
+			</ul>
+			<div id="cnt">
+				<div id="dTab1" class="Box">
+				<input type="button" value="刷新" onclick="getStatistics()" />
+					<table width="750" border="0" cellpadding="2" cellspacing="0"
+						color="#666" style="margin: 10px;">
+						<tr>
+							<td width="100%">
+								<table border="0" cellpadding="3" cellspacing="1" class="tab"
+									width="100%" ; align="center";>
+									<tr
+										style="line-height: 25px; background: #fff; text-align: center;">
+										<td>总用户数</td>
+										<td>今日活跃用户</td>
+										<td>本月活跃用户</td>
+										<td>本年活跃用户</td>
+									</tr>
+									<tr
+										style="line-height: 25px; background: #fff; color: #666666; text-align: center;">
+										<td id="countNum"></td>
+										<td id="todayNum"></td>
+										<td id="monthNum"></td>
+										<td id="yearNum"></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<div id="dTab2" class="HackBox Box">
+					<input id="add" type="button" onclick="addTag()" value="添加标签"><br/>
+					<span>标签名称:</span><input type="text" id="tagName"/>
+					<span>标签类型:</span><select id="tagType">
+										<option value="">请选择</option>
+										<option value="1">音乐</option>
+										<option value="2">运动</option>
+										<option value="3">摄影、绘画</option>
+										<option value="4">动漫游戏</option>
+										<option value="5">美食</option>
+										<option value="6">旅行</option>
+										<option value="7">文学</option>
+										<option value="8">影视</option>
+										<option value="9">公益</option>
+										<option value="10">科技财经</option>
+										<option value="11">宠物</option>
+										<option value="0">其他</option>
+									</select> 
+					<input id="seach" type="button" value="查询标签" onclick="getTag()" > 
+					<div id="list"
+						style="overflow: scroll; height: 300px; width: 100%;"></div>
+					<div class="demo">
+						<div id="demo2"></div>
+					</div>
+				</div>
+				<div id="dTab3" class="HackBox Box">
+					<input id="add" type="button" onclick="addFunTag()" value="添加趣味标签">
+					<div id="fun_list"
+						style="overflow: scroll; height: 500px; width: 100%;"></div>
+				</div>
+				<div id="dTab4" class="HackBox Box">
+					<input type="button" onclick="addFile()" value="添加"/>
+					<div id="activity_list"
+						style="overflow: scroll; height: 300px; width: 100%;"></div>
+					<div class="demo">
+						<div id="demo3"></div>
+					</div>
+					
+				</div>
+				<div id="dTab5" class="HackBox Box">
+					<!-- <span>标题：</span>
+					<input id="pushTitle" type="text" maxlength="20"/><br/> -->
+					<span>内容：</span>
+					<textarea id="pushContent" rows="3" cols="50" maxlength="50" ></textarea><br/>
+					<span style="float: left;">用户：</span>
+					<select id="pushUser" onclick="selectUser()" style="float: left;">
+						<option value="0">所有人</option>
+						<option value="1">地理区域</option>
+					</select>
+					<select id="province" style="display: none;float: left;"  onclick="province()">
+					</select>
+					<select id="city"  style="display: none;float: left;" onclick="city()">
+					</select>
+					<select id="area" style="display: none;float: left;" >
+					</select>
+					<br/>
+					<!-- <span>设备：</span>
+					<input type="checkbox" name="equipment" value="3"/>Android
+					<input type="checkbox" name="equipment" value="4"/>IOS -->
+					<br/>
+					<input type="button" value="发送" style="margin-left: 100px;" onclick="send()"/>
+				</div>
+			</div>
+
+		</div>
+
+	</div>
+	<div class="clear"></div>
+	
+	<div id="fileDIV" style="display: none;" class="form-group">
+						<div class="col-10">
+						<span>描述：</span><input type="text" id="describe" name="describe"/><br/>
+						<span>时间：</span><input type="text" id="expire_time" onblur="verifyDate()" name="expire_time"/><span style="color: red;">如：2014-08-01</span><br/>
+					          <div class="col-md-4" id="filelist">
+								<span>图片：</span><input type="text" name="body" class="form-control col-md-2" />
+								<label for="none" class="control-label processbar col-md-1"></label>
+							</div>
+							<div id="uploader" class="col-md-5">
+								<button type="button" id="pickfiles1"  class="btn blue">选择图片</button>
+								<button type="button" id="uploadfiles"  class="btn default">上传图片</button>
+								<pre id="console" class="display-hide"></pre>
+							</div>
+						</div>
+						
+					</div>
+					
+			<div id="detailDIV" style="display: none;" class="form-group">
+						<div class="col-10">
+					          <div class="col-md-4" id="filelist1">
+								<span>图片：</span><input type="text" name="fileName" class="form-control col-md-2" />
+								<label for="none" class="control-label processbar col-md-1"></label>
+							</div>
+							<div id="uploader1" class="col-md-5">
+								<button type="button" id="pickfiles2"  class="btn blue">选择图片</button>
+								<button type="button" id="uploadfiles1"  class="btn default">上传图片</button>
+								<pre id="console1" class="display-hide"></pre>
+							</div>
+						</div>
+						
+					</div>			
+					
+	<form style="display: none; margin-left: 30px" id="addTagDIV">
+		<span>名称：</span><input type="text" id="add_tag_name" name="name" /><br />
+		权重：<input type="text" id="add_tag_weight" name="weight" /><br /> 类型：
+		<select id="add_tag_type">
+			<option value="1">音乐</option>
+			<option value="2">运动</option>
+			<option value="3">摄影、绘画</option>
+			<option value="4">动漫游戏</option>
+			<option value="5">美食</option>
+			<option value="6">旅行</option>
+			<option value="7">文学</option>
+			<option value="8">影视</option>
+			<option value="9">公益</option>
+			<option value="10">科技财经</option>
+			<option value="11">宠物</option>
+			<option value="0">其他</option>
+		</select> <br /> <input type="button" onclick="add()" value="添加" /> <input
+			type="reset" value="取消" />
+	</form>
+
+	<form style="display: none; margin-left: 30px" id="ediTagDIV">
+		名称：<input type="text" id="edi_tag_name" name="name" /><br /> 权重：<input
+			type="text" id="edi_tag_weight" name="weight" /><br /> <input
+			type="text" style="display: none;" id="edi_tag_id" name="id" /><input
+			type="button" onclick="edi()" value="修改" /> <input type="reset"
+			value="取消" />
+	</form>
+
+	<form style="display: none; margin-left: 30px" id="addFunTagDIV">
+		<span style="float: left;">名称：</span><input style="float: left;"
+			type="text" id="add_fun_tag_name" /><br /> <span
+			style="float: left;">分类：</span> <select style="float: left;"
+			id="add_fun_tag_category">
+			<option value="1">都不拘小节</option>
+			<option value="2">都爱干净</option>
+			<option value="3">都轻度洁癖</option>
+			<option value="4">都重度洁癖</option>
+			<option value="5">相同地理位置</option>
+			<option value="6">都不想被打扰</option>
+			<option value="7">处于动静之间</option>
+			<option value="8">都想要更多互动</option>
+			<option value="9">相同行业</option>
+			<option value="10">喜欢音乐</option>
+			<option value="11">喜欢运动</option>
+			<option value="12">喜欢摄影/绘画/艺术</option>
+			<option value="13">喜欢动漫或游戏</option>
+			<option value="14">喜欢美食</option>
+			<option value="15">喜欢旅游与生活</option>
+			<option value="16">爱阅读</option>
+			<option value="17">喜欢影视</option>
+			<option value="18">热心公益</option>
+			<option value="19">关注IT与金融</option>
+			<option value="20">喜欢宠物</option>
+		</select><br /> <input type="button" onclick="addFun()" value="添加" /> <input
+			type="reset" value="取消" />
+	</form>
+<img style="display: none;" width="300px" height="300px" id="activityImg" alt="" src="">
+<img style="display: none;" width="300px" height="300px" id="detailImg" alt="" src="">
+
+<input type="hidden" id="current"/>
+<input type="hidden" id="detail"/>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.2.xsd">
+
+    <import resource="spring/rootContext.xml"/>
+
+    <rabbit:topic-exchange name="tongjuba.exchange.sms">
+        <rabbit:bindings>
+            <rabbit:binding pattern="tongjuba.key.sms.#" queue="${sms.queue.name}"/>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+    <rabbit:queue auto-delete="true" durable="false" id="smsQueue"
+                  name="${sms.queue.name}"></rabbit:queue>
+
+    <rabbit:listener-container concurrency="5" connection-factory="rabbitConnectionFactory"
+                               acknowledge="auto" message-converter="mqMessageConverter">
+        <rabbit:listener ref="messageHandler" queues="smsQueue"/>
+    </rabbit:listener-container>
+</beans>
